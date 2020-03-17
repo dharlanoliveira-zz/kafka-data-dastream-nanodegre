@@ -4,7 +4,9 @@ import time
 
 
 from confluent_kafka import avro
-from confluent_kafka.admin import AdminClient, NewTopic
+from kafka.admin import KafkaAdminClient, NewTopic
+from kafka.cluster import ClusterMetadata
+from kafka import KafkaConsumer
 from confluent_kafka.avro import AvroProducer
 
 logger = logging.getLogger(__name__)
@@ -12,9 +14,6 @@ logger = logging.getLogger(__name__)
 
 class Producer:
     """Defines and provides common functionality amongst Producers"""
-
-    # Tracks existing topics across all Producer instances
-    existing_topics = set([])
 
     def __init__(
         self,
@@ -38,9 +37,8 @@ class Producer:
         }
 
         # If the topic does not already exist, try to create it
-        if self.topic_name not in Producer.existing_topics:
+        if not self.topic_exists(self.topic_name):
             self.create_topic()
-            Producer.existing_topics.add(self.topic_name)
 
         self.producer = AvroProducer(
             self.broker_properties,
@@ -55,6 +53,7 @@ class Producer:
 
     def create_topic(self):
         logger.info(f'Creating topic {self.topic_name}')
+        self.topic_exists(self.topic_name)
         admin_client = KafkaAdminClient(bootstrap_servers=self.broker_properties['bootstrap.servers'], client_id=f'producer{self.topic_name}!')
         admin_client.create_topics(new_topics=[NewTopic(name=self.topic_name, num_partitions=self.num_replicas, replication_factor=self.num_replicas)], validate_only=False)
         logger.info(f'Topic {self.topic_name} created')
@@ -65,3 +64,8 @@ class Producer:
     def close(self):
         self.producer.close()
         logger.info("producer close complete")
+
+    def topic_exists(self, topic_name):
+        consumer = KafkaConsumer(bootstrap_servers=self.broker_properties['bootstrap.servers'])
+        broker_topics = consumer.topics()
+        return topic_name in broker_topics

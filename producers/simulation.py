@@ -1,6 +1,9 @@
 """Defines a time simulation responsible for executing any registered
 producers
 """
+from connector import configure_connector
+from models import Line, Weather
+
 import datetime
 import time
 from enum import IntEnum
@@ -12,11 +15,6 @@ import pandas as pd
 
 # Import logging before models to ensure configuration is picked up
 logging.config.fileConfig(f"{Path(__file__).parents[0]}/logging.ini")
-
-from connector import configure_connector
-from models import Line, Weather
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -49,6 +47,7 @@ class TimeSimulation:
                 TimeSimulation.weekdays.sun: {0: TimeSimulation.ten_min_frequency},
             }
 
+        self.train_lines = []
         self.train_lines = [
             Line(Line.colors.blue, self.raw_df[self.raw_df["blue"]]),
             Line(Line.colors.red, self.raw_df[self.raw_df["red"]]),

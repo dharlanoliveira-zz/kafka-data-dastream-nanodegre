@@ -1,3 +1,7 @@
 resources/
 .vscode/
 .gitignore.swp
+*.iml
+__pycache__
+.idea
+venv

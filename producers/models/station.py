@@ -6,7 +6,7 @@ from confluent_kafka import avro
 
 from models import Turnstile
 from models.producer import Producer
-
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +21,13 @@ class Station(Producer):
         self.name = name
         station_name = (
             self.name.lower()
-            .replace("/", "_and_")
-            .replace(" ", "_")
-            .replace("-", "_")
-            .replace("'", "")
+                .replace("/", "_and_")
+                .replace(" ", "_")
+                .replace("-", "_")
+                .replace("'", "")
         )
 
-        topic_name = f"{station_name}"
+        topic_name = f"nanodegre.kafka.chicago_cta.station_{station_name}.v1"
         super().__init__(
             topic_name,
             key_schema=Station.key_schema,
@@ -45,22 +45,20 @@ class Station(Producer):
         self.b_train = None
         self.turnstile = Turnstile(self)
 
-
     def run(self, train, direction, prev_station_id, prev_direction):
         """Simulates train arrivals at this station"""
-        
         logger.info("Producing arrival")
         self.producer.produce(
             topic=self.topic_name,
             key={"timestamp": self.time_millis()},
             value={
-                "station_id" : self.station_id,
-                "train_id" :train,
-                "direction" : direction,
-                "line" : self.color,
-                "train_status" : self.direction.train_status,
-                "prev_station_id" : prev_station_id,
-                "prev_direction" : prev_direction, 
+                'station_id': self.station_id,
+                'train_id': train.train_id,
+                'direction': direction,
+                'line': self.color.name,
+                'train_status': train.status.name,
+                'prev_station_id': prev_station_id,
+                'prev_direction': prev_direction
             }
         )
 
